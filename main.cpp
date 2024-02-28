@@ -7,9 +7,11 @@ using std::endl;
 using std::string;
 using std::size_t;
 using std::ifstream;
+using std::ofstream;
 
 
 string ExtractData(string fileName, size_t start, size_t end);
+bool WriteToFile(string fileName, string outputData);
 
 int main(int argc, char* argv[]) {
     bool StillGoing = true;
@@ -28,6 +30,8 @@ int main(int argc, char* argv[]) {
         cin >> start;
         cout << "Enter the ending position you want to capture" << endl;
         cin >> end;
+        cout << "Enter the output file name you'd like to have" << endl;
+        cin >> outputFileName;
 
         cout << "Searching for a file called: \"" << inputFileName << "\" and will start at positon " << start << " then capturing the text through position " << end << "." << endl;
 
@@ -35,7 +39,22 @@ int main(int argc, char* argv[]) {
 
         cout << "Found the Data: " << extractedData << endl;
 
-        StillGoing = false;
+        cout << "Outputting to File..." << endl;
+
+        if (WriteToFile(outputFileName, extractedData)){
+            cout << "Output Successful" << endl;
+        }
+        else{
+            cout << "There was an Error Outputting Data to a File" << endl;
+        }
+
+        cout << "Would you like to continue? (1 = Yes, 0 = No)" << endl;
+
+        size_t keepGoing = 0;
+        cin >> keepGoing;
+        if (keepGoing == 0){
+            StillGoing = false;
+        }
     }
 
     return 0;
@@ -64,4 +83,18 @@ string ExtractData(string fileName, size_t start, size_t end){
     }
     fileInput.close();
     return dataString;
+}
+
+bool WriteToFile(string fileName, string outputData){
+    bool successful = false;
+    ofstream fileOutput;
+    fileOutput.open(fileName);
+    
+    if (fileOutput.is_open()){
+        fileOutput << outputData;
+        successful = true;
+    }
+
+    fileOutput.close();
+    return successful;
 }
