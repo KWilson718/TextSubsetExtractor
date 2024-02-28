@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <filesystem>
 
 using std::cout;
 using std::cin;
@@ -9,50 +10,43 @@ using std::size_t;
 using std::ifstream;
 using std::ofstream;
 
+namespace fs = std::filesystem;
+using fs::exists;
 
-string ExtractData(string fileName, size_t start, size_t end);
+void CollectInfo(string& input, string& output, size_t& start, int& end);
+string ExtractData(string fileName, size_t start, int end);
 bool WriteToFile(string fileName, string outputData);
 
 int main(int argc, char* argv[]) {
+
     bool StillGoing = true;
+
     string inputFileName;
     string outputFileName;
-    int start;
+    size_t start;
     int end;
 
-    string extractedData;
-
-    
     while (StillGoing){
-        cout << "Enter the File Name & Path that you'd like to convert" << endl;
-        cin >> inputFileName;
-        cout << "Enter the starting position you want to capture. The positions start from 1" << endl;
-        cin >> start;
-        cout << "Enter the ending position you want to capture" << endl;
-        cin >> end;
-        cout << "Enter the output file name you'd like to have" << endl;
-        cin >> outputFileName;
+        CollectInfo(inputFileName, outputFileName, start, end);
 
-        cout << "Searching for a file called: \"" << inputFileName << "\" and will start at positon " << start << " then capturing the text through position " << end << "." << endl;
+        string inputFilePath = "./InputFiles/" + inputFileName;
+        string outputFilePath = "./OutputFiles/" + outputFileName;
 
-        extractedData = ExtractData(inputFileName, start, end);
+        string extractedData = ExtractData(inputFilePath, start, end);
 
-        cout << "Found the Data: " << extractedData << endl;
+        cout << "Extracted: " << extractedData << " from " << inputFileName << endl;
 
-        cout << "Outputting to File..." << endl;
-
-        if (WriteToFile(outputFileName, extractedData)){
-            cout << "Output Successful" << endl;
+        if (WriteToFile(outputFilePath, extractedData)){
+            cout << "File Successfully Written" << endl;
         }
         else{
-            cout << "There was an Error Outputting Data to a File" << endl;
+            cout << "ERROR in Writing Output File" << endl;
         }
 
-        cout << "Would you like to continue? (1 = Yes, 0 = No)" << endl;
-
-        size_t keepGoing = 0;
-        cin >> keepGoing;
-        if (keepGoing == 0){
+        char continueChar;
+        cout << "Do You Want to Extract More Data? (Y = Yes, N = No)" << endl;
+        cin >> continueChar;
+        if((continueChar == 'n')||(continueChar == 'N')){
             StillGoing = false;
         }
     }
@@ -60,9 +54,82 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
-string ExtractData(string fileName, size_t start, size_t end){
+// Collects the information for an input file name, an output file name, a start num, and an end num
+void CollectInfo(string& input, string& output, size_t& start, int& end){
+    bool SearchingForData = true;
+
+    // Finds Input FileName, Repeating if File Doesn't Exist
+    while (SearchingForData){
+        cout << "Enter the File Name that you'd like to convert. Files should be in the InputFiles Folder:" << endl;
+        cin >> input;
+        
+        // Checks to see if the file exists, if it doesn't, then it sets SearchingForData to true, outputs a message saying it wasn't found, and repeats collection
+        SearchingForData = (!(exists("./InputFiles/" + input)));
+        if (SearchingForData){
+            cout << "ERROR Finding the File, please try again. Remember that it needs to be a file within the InputFiles Folder." << endl;
+        }
+    }
+
+    SearchingForData = true;
+    // Finds Output FileName, Verifying that User Wants to Override Data if File Already Exists
+    while (SearchingForData){
+        cout << "Enter the name of a file you want to write to. (Will Override Preexisting Files)" << endl;
+        cin >> output;
+
+        // Checks if a file with the same name exists, which will prompt for right to override if it does
+        bool fileExists = exists("./OutputFiles/" + output);
+        bool confirm = false;
+        if (fileExists){
+            cout << "A File with the same name already exists, do you wish to override? (Y = Yes, N = No)" << endl;
+            cin >> confirm;
+            if (confirm){
+                SearchingForData = false;
+            }
+            else{
+                cout << "In Order to Prevent Override, Please ";
+            }
+        }
+        else{
+            SearchingForData = false;
+        }
+
+    }
+
+    SearchingForData = true;
+    // Collects a number for where to start, makes sure it's above zero, asking again if it isn't
+    while (SearchingForData){
+        cout << "Please Enter A Position to Start Extraction At, The First Position is 1" << endl;
+        cin >> start;
+
+        if (start <= 0){
+            cout << "Position Not Valid, ";
+        }
+        else{
+            SearchingForData = false;
+        }
+    }
+
+    SearchingForData = true;
+    // Collects a number for output, makes sure it's equal to or greater than start, or that it's -1
+    while (SearchingForData){
+        cout << "Please Enter A Position to End Extraction At. If you Wish for the Rest of the File, enter -1" << endl;
+        cin >> end;
+
+        if (end == -1){
+            SearchingForData = false;
+        }
+        else if(end >= start){
+            SearchingForData = false;
+        }
+        else{
+            cout << "Invalid Position, ";
+        }
+    }
+}
+
+string ExtractData(string fileName, size_t start, int end){
     string dataString;
-    size_t dataLength = (end - start);
+    int dataLength = (end - (static_cast<int>(start)));
     ifstream fileInput;
     fileInput.open(fileName);
 
@@ -70,16 +137,30 @@ string ExtractData(string fileName, size_t start, size_t end){
         if (start > 1){
             fileInput.ignore(start - 1, EOF);
         }
-
-        for (size_t i = 0; i <= dataLength; i++){
-            char c = fileInput.get();
-            if (c != EOF){
-                dataString.push_back(c);
-            }
-            else{
-                break;
+        if(end != -1){
+            for (size_t i = 0; i <= dataLength; i++){
+                char c = fileInput.get();
+                if (c != EOF){
+                    dataString.push_back(c);
+                }
+                else{
+                    break;
+                }
             }
         }
+        else{
+            bool reading = true;
+            while(reading){
+                char c = fileInput.get();
+                if (c != EOF){
+                    dataString.push_back(c);
+                }
+                else{
+                    reading = false;
+                    break;
+                }
+            }
+        }        
     }
     fileInput.close();
     return dataString;
@@ -88,6 +169,7 @@ string ExtractData(string fileName, size_t start, size_t end){
 bool WriteToFile(string fileName, string outputData){
     bool successful = false;
     ofstream fileOutput;
+
     fileOutput.open(fileName);
     
     if (fileOutput.is_open()){
