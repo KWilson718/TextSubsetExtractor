@@ -78,11 +78,11 @@ void CollectInfo(string& input, string& output, size_t& start, int& end){
 
         // Checks if a file with the same name exists, which will prompt for right to override if it does
         bool fileExists = exists("./OutputFiles/" + output);
-        bool confirm = false;
+        char confirmCheck;
         if (fileExists){
             cout << "A File with the same name already exists, do you wish to override? (Y = Yes, N = No)" << endl;
-            cin >> confirm;
-            if (confirm){
+            cin >> confirmCheck;
+            if ((confirmCheck == 'Y')||(confirmCheck == 'y')){
                 SearchingForData = false;
             }
             else{
